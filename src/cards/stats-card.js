@@ -3,7 +3,13 @@ const Card = require("../common/Card");
 const icons = require("../common/icons");
 const { getStyles } = require("../getStyles");
 const { statCardLocales } = require("../translations");
-const { kFormatter, getCardColors, FlexLayout } = require("../common/utils");
+const {
+  kFormatter,
+  flexLayout,
+  clampValue,
+  measureText,
+  getCardColors,
+} = require("../common/utils");
 
 const createTextNode = ({
   icon,
@@ -63,6 +69,8 @@ const renderStatsCard = (stats = {}, options = { hide: [] }) => {
     bg_color,
     theme = "default",
     custom_title,
+    border_radius,
+    border_color,
     locale,
     disable_animations = false,
   } = options;
@@ -70,11 +78,18 @@ const renderStatsCard = (stats = {}, options = { hide: [] }) => {
   const lheight = parseInt(line_height, 10);
 
   // returns theme based colors with proper overrides and defaults
-  const { titleColor, textColor, iconColor, bgColor } = getCardColors({
+  const {
+    titleColor,
+    textColor,
+    iconColor,
+    bgColor,
+    borderColor,
+  } = getCardColors({
     title_color,
     icon_color,
     text_color,
     bg_color,
+    border_color,
     theme,
   });
 
@@ -122,7 +137,18 @@ const renderStatsCard = (stats = {}, options = { hide: [] }) => {
     },
   };
 
-  const isLongLocale = ["fr", "pt-br", "es"].includes(locale) === true;
+  const longLocales = [
+    "cn",
+    "es",
+    "fr",
+    "pt-br",
+    "ru",
+    "uk-ua",
+    "id",
+    "my",
+    "pl",
+  ];
+  const isLongLocale = longLocales.includes(locale) === true;
 
   // filter out hidden stats defined by user & create the text nodes
   const statItems = Object.keys(STATS)
@@ -176,16 +202,30 @@ const renderStatsCard = (stats = {}, options = { hide: [] }) => {
     progress,
   });
 
+  const calculateTextWidth = () => {
+    return measureText(custom_title ? custom_title : i18n.t("statcard.title"));
+  };
+
+  const width = hide_rank
+    ? clampValue(
+        50 /* padding */ + calculateTextWidth() * 2,
+        270 /* min */,
+        Infinity,
+      )
+    : 495;
+
   const card = new Card({
     customTitle: custom_title,
     defaultTitle: i18n.t("statcard.title"),
-    width: 495,
+    width,
     height,
+    border_radius,
     colors: {
       titleColor,
       textColor,
       iconColor,
       bgColor,
+      borderColor,
     },
   });
 
@@ -199,7 +239,7 @@ const renderStatsCard = (stats = {}, options = { hide: [] }) => {
     ${rankCircle}
 
     <svg x="0" y="0">
-      ${FlexLayout({
+      ${flexLayout({
         items: statItems,
         gap: lheight,
         direction: "column",
